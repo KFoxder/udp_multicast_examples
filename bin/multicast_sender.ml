@@ -31,5 +31,6 @@ let run mcast_port mcast_group =
     in
     count := !count + 1
   done;
+  print_endline ("Finished sending " ^ (string_of_int !count) ^ " packets");
   ()
 ;;
