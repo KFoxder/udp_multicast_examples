@@ -1,0 +1,16 @@
+(executable
+ (public_name multicast_udp)
+ (name main)
+ (libraries
+  lwt
+  lwt.unix
+  lwt_ppx
+  unix
+  core
+  core_unix
+  async
+  async_unix
+  async_udp
+  ppx_let)
+ (preprocess
+  (pps lwt_ppx ppx_let)))
