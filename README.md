@@ -1,6 +1,9 @@
 # OCaml UDP Multicast Examples
 
-Goal of this is to provide UDP multicast examples using the two main OCaml concurrency libraries [`lwt`](), [`async` ]()and no concurrency. I couldn't find good examples at the time so I created them for anyone who may need them as a starting point in the future.
+Goal of this is to provide UDP multicast examples using the two main OCaml concurrency libraries [`lwt`](https://github.com/ocsigen/lwt), [`async`](https://github.com/janestreet/async) and no concurrency. I couldn't find good examples at the time so I created them for anyone who may need them as a starting point in the future.
+
+#### Screenshots
+![](./screenshot.gif)
 
 ### Setup
 ```
@@ -12,7 +15,7 @@ opam install . --deps-only
 
 #### Run UDP Multicast Listener
 ```
-# Run one of the multicast listeners
+# Run one (or all three) of the multicast listeners
 # Option 1: Run lwt
 dune exec multicast_udp lwt
 # Option 2: Run async 
