@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github KFoxder/multicast_udp_ocaml))
+ (github KFoxder/udp_multicast_examples))
 
 (authors "Kevin Fox")
 
