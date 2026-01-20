@@ -1,12 +1,3 @@
-let parse_seq msg =
-  try
-    let seq_start = String.index msg ':' + 1 in
-    let seq_end = String.index msg '|' in
-    int_of_string (String.sub msg seq_start (seq_end - seq_start))
-  with
-  | _ -> -1
-;;
-
 let rec handle_request sock buffer expected_seq =
   let%lwt sock = sock in
   let%lwt num_bytes, sender_addr = Lwt_unix.recvfrom sock buffer 0 1024 [] in
@@ -17,18 +8,18 @@ let rec handle_request sock buffer expected_seq =
         ^ Core_unix.Inet_addr.to_string sender_ip
         ^ ":"
         ^ string_of_int port);
-     let message = Bytes.sub_string buffer 0 num_bytes in
-     print_endline ("Received message: " ^ message);
-     let current_seq = parse_seq message in
-     if current_seq >= 0
-     then (
-       if current_seq <> !expected_seq
-       then
-         Printf.printf
-           "OUT OF ORDER: expected %d, got %d\n%!"
-           !expected_seq
-           current_seq;
-       expected_seq := current_seq + 1)
+     let msg_bytes = Bytes.sub buffer 0 num_bytes in
+     (match Protocol.decode msg_bytes with
+      | Some msg ->
+        Printf.printf "Received message: seq=%d, time=%f\n%!" msg.payload.seq msg.payload.timestamp;
+        if msg.payload.seq <> !expected_seq
+        then
+          Printf.printf
+            "OUT OF ORDER: expected %d, got %d\n%!"
+            !expected_seq
+            msg.payload.seq;
+        expected_seq := msg.payload.seq + 1
+      | None -> print_endline "Warning: received invalid message")
    | _ -> print_endline "Received request from unknown address");
   handle_request (Lwt.return sock) buffer expected_seq
 ;;

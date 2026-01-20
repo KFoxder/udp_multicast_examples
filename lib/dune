@@ -1,0 +1,3 @@
+(library
+ (name protocol)
+ (public_name multicast_udp.protocol))

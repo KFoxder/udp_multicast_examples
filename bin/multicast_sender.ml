@@ -18,10 +18,10 @@ let run mcast_port mcast_group =
   let count = ref 0 in
   for i = 1 to 10_000 do
     let time = Unix.gettimeofday () in
-    let msg = "Seq:" ^ string_of_int i ^ "|Time:" ^ string_of_float time in
-    let msg_len = String.length msg in
+    let msg = Protocol.encode_data ~seq:i ~timestamp:time in
+    let msg_len = Bytes.length msg in
     let _ =
-      Unix.sendto_substring
+      Unix.sendto
         sock
         msg
         0
@@ -31,6 +31,6 @@ let run mcast_port mcast_group =
     in
     count := !count + 1
   done;
-  print_endline ("Finished sending " ^ (string_of_int !count) ^ " packets");
+  print_endline ("Finished sending " ^ string_of_int !count ^ " packets");
   ()
 ;;

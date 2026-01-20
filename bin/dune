@@ -11,6 +11,7 @@
   async
   async_unix
   async_udp
-  ppx_let)
+  ppx_let
+  protocol)
  (preprocess
   (pps lwt_ppx ppx_let)))

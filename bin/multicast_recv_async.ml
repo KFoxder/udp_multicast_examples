@@ -1,27 +1,18 @@
 open Async.Deferred.Let_syntax
 
-let parse_seq msg =
-  try
-    let seq_start = String.index msg ':' + 1 in
-    let seq_end = String.index msg '|' in
-    int_of_string (String.sub msg seq_start (seq_end - seq_start))
-  with
-  | _ -> -1
-;;
-
 let make_handle_request expected_seq =
   fun (buf : Async_udp.write_buffer) (addr : Async.Socket.Address.Inet.t) ->
-    let msg = Iobuf.to_string buf in
+    let msg_bytes = Bytes.of_string (Iobuf.to_string buf) in
     let addr_str = Async.Socket.Address.Inet.to_string addr in
     print_endline ("Received request from: " ^ addr_str);
-    print_endline ("Received message: " ^ msg);
-    let current_seq = parse_seq msg in
-    if current_seq >= 0
-    then (
-      if current_seq <> !expected_seq
+    match Protocol.decode msg_bytes with
+    | Some msg ->
+      Printf.printf "Received message: seq=%d, time=%f\n%!" msg.payload.seq msg.payload.timestamp;
+      if msg.payload.seq <> !expected_seq
       then
-        Printf.printf "OUT OF ORDER: expected %d, got %d\n%!" !expected_seq current_seq;
-      expected_seq := current_seq + 1)
+        Printf.printf "OUT OF ORDER: expected %d, got %d\n%!" !expected_seq msg.payload.seq;
+      expected_seq := msg.payload.seq + 1
+    | None -> print_endline "Warning: received invalid message"
 ;;
 
 let create_socket mcast_port mcast_group =
