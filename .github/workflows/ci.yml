@@ -24,3 +24,18 @@ jobs:
 
       - name: Build
         run: opam exec -- dune build
+
+      - name: Run unit tests
+        run: opam exec -- dune runtest
+
+      - name: Integration test - sender startup
+        run: |
+          timeout 10 opam exec -- dune exec multicast_udp sender -- --count 5
+
+      - name: Integration test - sender/receiver communication
+        run: |
+          opam exec -- dune exec multicast_udp none -- --count 3 &
+          RECEIVER_PID=$!
+          sleep 2
+          opam exec -- dune exec multicast_udp sender -- --count 5
+          wait $RECEIVER_PID
