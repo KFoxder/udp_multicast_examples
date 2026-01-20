@@ -1,11 +1,27 @@
 open Async.Deferred.Let_syntax
 
-let handle_request (buf : Async_udp.write_buffer) (addr : Async.Socket.Address.Inet.t) =
-  let msg = Iobuf.to_string buf in
-  let addr_str = Async.Socket.Address.Inet.to_string addr in
-  print_endline ("Received request from: " ^ addr_str);
-  print_endline ("Received message: " ^ msg);
-  ()
+let parse_seq msg =
+  try
+    let seq_start = String.index msg ':' + 1 in
+    let seq_end = String.index msg '|' in
+    int_of_string (String.sub msg seq_start (seq_end - seq_start))
+  with
+  | _ -> -1
+;;
+
+let make_handle_request expected_seq =
+  fun (buf : Async_udp.write_buffer) (addr : Async.Socket.Address.Inet.t) ->
+    let msg = Iobuf.to_string buf in
+    let addr_str = Async.Socket.Address.Inet.to_string addr in
+    print_endline ("Received request from: " ^ addr_str);
+    print_endline ("Received message: " ^ msg);
+    let current_seq = parse_seq msg in
+    if current_seq >= 0
+    then (
+      if current_seq <> !expected_seq
+      then
+        Printf.printf "OUT OF ORDER: expected %d, got %d\n%!" !expected_seq current_seq;
+      expected_seq := current_seq + 1)
 ;;
 
 let create_socket mcast_port mcast_group =
@@ -26,6 +42,8 @@ let create_socket mcast_port mcast_group =
 let create_server sock =
   print_endline "Creating Server";
   let%bind sock = sock in
+  let expected_seq = ref 0 in
+  let handle_request = make_handle_request expected_seq in
   let loop_res = Async_udp.recvfrom_loop (Async.Socket.fd sock) handle_request in
   loop_res
 ;;

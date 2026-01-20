@@ -1,4 +1,13 @@
-let rec handle_request sock buffer =
+let parse_seq msg =
+  try
+    let seq_start = String.index msg ':' + 1 in
+    let seq_end = String.index msg '|' in
+    int_of_string (String.sub msg seq_start (seq_end - seq_start))
+  with
+  | _ -> -1
+;;
+
+let rec handle_request sock buffer expected_seq =
   let num_bytes, sender_addr = Unix.recvfrom sock buffer 0 1024 [] in
   (match sender_addr with
    | Core_unix.ADDR_INET (sender_ip, port) ->
@@ -8,9 +17,19 @@ let rec handle_request sock buffer =
         ^ ":"
         ^ string_of_int port);
      let message = Bytes.sub_string buffer 0 num_bytes in
-     print_endline ("Received message: " ^ message)
+     print_endline ("Received message: " ^ message);
+     let current_seq = parse_seq message in
+     if current_seq >= 0
+     then (
+       if current_seq <> !expected_seq
+       then
+         Printf.printf
+           "OUT OF ORDER: expected %d, got %d\n%!"
+           !expected_seq
+           current_seq;
+       expected_seq := current_seq + 1)
    | _ -> print_endline "Received request from unknown address");
-  handle_request sock buffer
+  handle_request sock buffer expected_seq
 ;;
 
 let create_socket mcast_port mcast_group =
@@ -28,8 +47,9 @@ let create_socket mcast_port mcast_group =
 let create_server sock =
   print_endline "Creating Buffer";
   let buffer = Bytes.create 1024 in
+  let expected_seq = ref 0 in
   print_endline "Creating Server";
-  handle_request sock buffer
+  handle_request sock buffer expected_seq
 ;;
 
 let run mcast_port mcast_group =
