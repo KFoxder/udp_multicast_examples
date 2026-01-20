@@ -1,26 +1,33 @@
-let rec handle_request sock buffer expected_seq =
-  let num_bytes, sender_addr = Unix.recvfrom sock buffer 0 1024 [] in
-  (match sender_addr with
-   | Core_unix.ADDR_INET (sender_ip, port) ->
-     print_endline
-       ("Received request from: "
-        ^ Core_unix.Inet_addr.to_string sender_ip
-        ^ ":"
-        ^ string_of_int port);
-     let msg_bytes = Bytes.sub buffer 0 num_bytes in
-     (match Protocol.decode msg_bytes with
-      | Some msg ->
-        Printf.printf "Received message: seq=%d, time=%f\n%!" msg.payload.seq msg.payload.timestamp;
-        if msg.payload.seq <> !expected_seq
-        then
+let rec handle_request sock buffer expected_seq count received =
+  if count > 0 && !received >= count
+  then print_endline ("Received " ^ string_of_int !received ^ " packets, exiting")
+  else (
+    let num_bytes, sender_addr = Unix.recvfrom sock buffer 0 1024 [] in
+    (match sender_addr with
+     | Core_unix.ADDR_INET (sender_ip, port) ->
+       print_endline
+         ("Received request from: "
+          ^ Core_unix.Inet_addr.to_string sender_ip
+          ^ ":"
+          ^ string_of_int port);
+       let msg_bytes = Bytes.sub buffer 0 num_bytes in
+       (match Protocol.decode msg_bytes with
+        | Some msg ->
           Printf.printf
-            "OUT OF ORDER: expected %d, got %d\n%!"
-            !expected_seq
-            msg.payload.seq;
-        expected_seq := msg.payload.seq + 1
-      | None -> print_endline "Warning: received invalid message")
-   | _ -> print_endline "Received request from unknown address");
-  handle_request sock buffer expected_seq
+            "Received message: seq=%d, time=%f\n%!"
+            msg.payload.seq
+            msg.payload.timestamp;
+          if msg.payload.seq <> !expected_seq
+          then
+            Printf.printf
+              "OUT OF ORDER: expected %d, got %d\n%!"
+              !expected_seq
+              msg.payload.seq;
+          expected_seq := msg.payload.seq + 1;
+          received := !received + 1
+        | None -> print_endline "Warning: received invalid message")
+     | _ -> print_endline "Received request from unknown address");
+    handle_request sock buffer expected_seq count received)
 ;;
 
 let create_socket mcast_port mcast_group =
@@ -35,18 +42,20 @@ let create_socket mcast_port mcast_group =
   sock
 ;;
 
-let create_server sock =
+let create_server sock count =
   print_endline "Creating Buffer";
   let buffer = Bytes.create 1024 in
   let expected_seq = ref 0 in
+  let received = ref 0 in
   print_endline "Creating Server";
-  handle_request sock buffer expected_seq
+  handle_request sock buffer expected_seq count received
 ;;
 
-let run mcast_port mcast_group =
+let run mcast_port mcast_group count =
   print_endline "Running non-concurrent UDP Multicast";
   print_endline ("Port: " ^ string_of_int mcast_port);
   print_endline ("Group: " ^ Core_unix.Inet_addr.to_string mcast_group);
+  print_endline ("Count: " ^ string_of_int count ^ " (0 = infinite)");
   let sock = create_socket mcast_port mcast_group in
-  create_server sock
+  create_server sock count
 ;;
