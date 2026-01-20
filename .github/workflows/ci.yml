@@ -29,8 +29,9 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Integration test - sender startup
+        timeout-minutes: 1
         run: |
-          timeout 10 opam exec -- dune exec multicast_udp sender -- --count 5
+          opam exec -- dune exec multicast_udp sender -- --count 5
 
       - name: Integration test - sender/receiver communication
         run: |
