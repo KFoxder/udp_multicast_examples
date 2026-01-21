@@ -1,3 +1,4 @@
 (test
  (name test_protocol)
- (libraries protocol))
+ (libraries protocol)
+ (instrumentation (backend bisect_ppx)))

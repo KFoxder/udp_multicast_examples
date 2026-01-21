@@ -14,4 +14,5 @@
   ppx_let
   protocol)
  (preprocess
-  (pps lwt_ppx ppx_let)))
+  (pps lwt_ppx ppx_let))
+ (instrumentation (backend bisect_ppx)))

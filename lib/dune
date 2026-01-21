@@ -1,3 +1,4 @@
 (library
  (name protocol)
- (public_name multicast_udp.protocol))
+ (public_name multicast_udp.protocol)
+ (instrumentation (backend bisect_ppx)))
