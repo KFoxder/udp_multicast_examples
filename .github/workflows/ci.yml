@@ -68,3 +68,11 @@ jobs:
         with:
           name: coverage-report
           path: _coverage/
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_coverage
+          destination_dir: ./
