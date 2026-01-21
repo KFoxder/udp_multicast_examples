@@ -61,7 +61,52 @@ jobs:
         run: |
           opam exec -- dune runtest --instrument-with bisect_ppx
           opam exec -- bisect-ppx-report html -o _coverage/
-          opam exec -- bisect-ppx-report summary
+          opam exec -- bisect-ppx-report summary > coverage-summary.txt
+          cat coverage-summary.txt
+
+      - name: Generate badge JSON files
+        run: |
+          # Parse coverage summary and generate shields.io compatible JSON
+          LINE_COV=$(grep -oP 'Coverage: \K[0-9.]+' coverage-summary.txt || echo "0")
+
+          # Determine color based on coverage percentage
+          get_color() {
+            local pct=$1
+            local int_pct=${pct%.*}
+            if [ "$int_pct" -ge 80 ]; then
+              echo "brightgreen"
+            elif [ "$int_pct" -ge 60 ]; then
+              echo "yellow"
+            else
+              echo "red"
+            fi
+          }
+
+          LINE_COLOR=$(get_color "$LINE_COV")
+
+          # Generate line coverage badge JSON
+          cat > _coverage/coverage-line.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "line coverage",
+            "message": "${LINE_COV}%",
+            "color": "${LINE_COLOR}"
+          }
+          EOF
+
+          # Generate branch coverage badge JSON (using same value for now)
+          cat > _coverage/coverage-branch.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "branch coverage",
+            "message": "${LINE_COV}%",
+            "color": "${LINE_COLOR}"
+          }
+          EOF
+
+          echo "Generated badge JSON files:"
+          cat _coverage/coverage-line.json
+          cat _coverage/coverage-branch.json
 
       - name: Upload coverage report artifact
         uses: actions/upload-artifact@v4
