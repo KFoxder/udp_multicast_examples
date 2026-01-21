@@ -1,5 +1,8 @@
 # OCaml UDP Multicast Examples
 
+[![Line Coverage](https://img.shields.io/endpoint?url=https://kfoxder.github.io/udp_multicast_examples/coverage-line.json)](https://kfoxder.github.io/udp_multicast_examples/)
+[![Branch Coverage](https://img.shields.io/endpoint?url=https://kfoxder.github.io/udp_multicast_examples/coverage-branch.json)](https://kfoxder.github.io/udp_multicast_examples/)
+
 Goal of this is to provide UDP multicast examples using the two main OCaml concurrency libraries [`lwt`](https://github.com/ocsigen/lwt), [`async`](https://github.com/janestreet/async) and no concurrency. I couldn't find good examples at the time so I created them for anyone who may need them as a starting point in the future.
 
 See blog post: [https://www.kevinfox.dev/udp-multicast](https://www.kevinfox.dev/udp-multicast)
