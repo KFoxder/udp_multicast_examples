@@ -108,6 +108,67 @@ jobs:
           cat _coverage/coverage-line.json
           cat _coverage/coverage-branch.json
 
+      - name: Post coverage comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read current coverage
+            const summary = fs.readFileSync('coverage-summary.txt', 'utf8');
+            const match = summary.match(/Coverage: ([0-9.]+)%/);
+            const currentCov = match ? parseFloat(match[1]) : 0;
+
+            // Try to fetch baseline from gh-pages
+            let baseCov = null;
+            let diff = '';
+            try {
+              const response = await fetch('https://kfoxder.github.io/udp_multicast_examples/coverage-line.json');
+              if (response.ok) {
+                const data = await response.json();
+                baseCov = parseFloat(data.message);
+                const change = currentCov - baseCov;
+                const sign = change >= 0 ? '+' : '';
+                diff = ` (${sign}${change.toFixed(2)}% from baseline)`;
+              }
+            } catch (e) {
+              console.log('Could not fetch baseline coverage:', e.message);
+            }
+
+            const body = `## Coverage Report
+
+            | Metric | Value |
+            |--------|-------|
+            | Line Coverage | ${currentCov.toFixed(2)}%${diff} |
+
+            ${baseCov !== null ? `Baseline: ${baseCov.toFixed(2)}%` : '_No baseline available yet_'}`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c => c.body.includes('## Coverage Report'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
       - name: Upload coverage report artifact
         uses: actions/upload-artifact@v4
         with:
